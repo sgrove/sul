@@ -12,20 +12,18 @@
 
   :source-paths ["src"]
 
-  :cljsbuild {
-    :builds [{:id "dev"
-              :source-paths ["src"]
-              :compiler {
-                :output-to "sul.js"
-                :output-dir "out"
-                :optimizations :none
-                :source-map true}}
-             {:id           "prod"
-              :source-paths ["src"]
-              :compiler     {:pretty-print  false
-                             :output-dir    "prod_out"
-                             :optimizations :advanced
-                             :output-to     "sul.js"
-                             :preamble      ["react/react.min.js"]
-                             :externs       ["datascript/externs.js"
-                                             "react/externs/react.js"]}}]})
+  :cljsbuild {:builds [{:id           "dev"
+                        :source-paths ["src"]
+                        :compiler     {:output-to     "sul.dev.js"
+                                       :output-dir    "out"
+                                       :optimizations :none
+                                       :source-map    true}}
+                       {:id           "prod"
+                        :source-paths ["src"]
+                        :compiler     {:pretty-print  false
+                                       :output-dir    "prod_out"
+                                       :optimizations :advanced
+                                       :output-to     "sul.js"
+                                       :preamble      ["react/react.min.js"]
+                                       :externs       ["datascript/externs.js"
+                                                       "react/externs/react.js"]}}]})
