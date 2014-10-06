@@ -1,6 +1,6 @@
 pom.xml
 *jar
-*js
+*.js
 /lib/
 /classes/
 /out/
