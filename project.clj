@@ -26,6 +26,6 @@
                                        :output-dir    "prod_out"
                                        :optimizations :advanced
                                        :output-to     "sul.js"
-                                       :preamble      ["react/react.min.js"]
+                                       :preamble      ["META-INF/resources/webjars/react/0.12.0/react.min.js"]
                                        :externs       ["datascript/externs.js"
                                                        "react/externs/react.js"]}}]})
