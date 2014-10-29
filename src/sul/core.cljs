@@ -171,17 +171,23 @@
     (fn [{:keys [title]} com-data]
       (dom/div
        nil
-       (dom/h1 #js{:style #js{:background-color (rand-color)}} (str title " - " (.getTime (js/Date.))))))}))
+       (dom/h1 #js{:style #js{:backgroundColor (rand-color)}} (str title " - " (.getTime (js/Date.))))))}))
 
 (def song-list
   (sul-com
    {:display-name "SongList"
     :render (fn [songs]
-              (dom/ul #js{:style #js{:background-color (rand-color)}}
+              (dom/ul #js{:style #js{:backgroundColor (rand-color)}}
                       (clj->js (map #(dom/li #js{:key (:song/title %)} (str (:song/year %) " - " (:song/title %) " [" (:song/album %) "]")) songs))))}))
 
+(defn build [com params & children]
+  (apply (.-createElement js/React) com params children))
+
+(def app-el
+  (js/document.getElementById "app"))
+
 ;; Just a normal React component to tie it all together for now
-(defn container [conn]
+(def container
   (js/React.createClass
    #js
    {:getDisplayName
@@ -189,77 +195,71 @@
     :render
     (fn []
       (this-as this
-               (dom/div nil
-                        (dom/div #js{:className "controls"}
-                                 (dom/button #js{:onClick replay-all-reports!} "Quick Replay")
-                                 (dom/button #js{:onClick (partial replay-all-reports-with-delay! 1000)} "Timed Replay")
-                                 (dom/button #js{:onClick (partial load-and-replay-playback! "example_playback")} "Load & Replay")
-                                 (dom/button #js{:onClick (partial load-and-replay-playback! "example_playback" 1000)} "Timed Load & Replay"))
-                        (dom/h2 nil "Quick replay will step through each of the successive replays steps as close to 60fps as possible")
-                        (dom/h2 nil "Timed will replay the events with the original time delta between each step")
-                        (dom/h2 nil "Load will load an example edn file and play it back, so you can see how the user used your app, or how an error occurred.")
-                        (dom/a #js{:href "example_playback.edn"} "Example Playback File")
-                        (dom/h1 nil "Sul")
-                        (title. #js{:q '[:find  ?v
-                                         :where
-                                         [?e :app/title ?v]]
-                                    :p (fn [r]
-                                         ;; Post-process to
-                                         ;; create the
-                                         ;; component-specific
-                                         ;; data from the
-                                         ;; query result
-                                         (let [[title] (last r)]
-                                           {:title title}))
-                                    :conn conn})
-                        (dom/br nil)
-                        (mouse-position. #js{:q '[:find ?x ?y
-                                                  :where
-                                                  [?e :mouse/x ?x]
-                                                  [?e :mouse/y ?y]]
-                                             :p (fn [r]
-                                                  (let [[x y] (last r)]
-                                                    {:x x
-                                                     :y y}))
-                                             :conn conn})
-                        (dom/br nil)
-                        (dom/select #js{:onChange (fn [event]
-                                                    (update-song-sort-field! conn (reader/read-string (.. event -target -value))))}
-                                    (dom/option #js{:value :song/year} "Year")
-                                    (dom/option #js{:value :song/title} "Title")
-                                    (dom/option #js{:value :song/album} "Album"))
-                        (song-list. #js{:q '[:find ?title ?album ?year ?sort-by
-                                             :where
-                                             [?e :song/title ?title]
-                                             [?e :song/album ?album]
-                                             [?e :song/year ?year]
-                                             [?e2 :ui/song-sort-field ?sort-by]]
-                                        :p (fn [r]
-                                             (let [sort-field (or (last (first r))
-                                                                  :song/year)]
-                                               (->> r
-                                                    (map #(let [[title album year sort-by] %]
-                                                            {:song/title title
-                                                             :song/album album
-                                                             :song/year  year}))
-                                                    (sort-by sort-field))))
-                                        :conn conn})
-                        (mouse-circle. #js{:q '[:find ?x ?y
+               (let [conn (aget (.-props this) "conn")]
+                 (dom/div #js{}
+                          (dom/div #js{:className "controls"}
+                                   (dom/button #js{:onClick replay-all-reports!} "Quick Replay")
+                                   (dom/button #js{:onClick (partial replay-all-reports-with-delay! 1000)} "Timed Replay")
+                                   (dom/button #js{:onClick (partial load-and-replay-playback! "example_playback")} "Load & Replay")
+                                   (dom/button #js{:onClick (partial load-and-replay-playback! "example_playback" 1000)} "Timed Load & Replay"))
+                          (dom/h2 nil "Quick replay will step through each of the successive replays steps as close to 60fps as possible")
+                          (dom/h2 nil "Timed will replay the events with the original time delta between each step")
+                          (dom/h2 nil "Load will load an example edn file and play it back, so you can see how the user used your app, or how an error occurred.")
+                          (dom/a #js{:href "example_playback.edn"} "Example Playback File")
+                          (dom/h1 nil "Sul")
+                          (build title #js{:q '[:find  ?v
                                                 :where
-                                                [?e :mouse/x ?x]
-                                                [?e :mouse/y ?y]]
+                                                [?e :app/title ?v]]
                                            :p (fn [r]
-                                                (let [[x y] (last r)]
-                                                  {:x x
-                                                   :y y}))
-                                           :conn conn}))))}))
-
-;;******************************************************************************
-;;  Create DB, add tx listener, install demo app
-;;******************************************************************************
-
-(def app-el
-  (js/document.getElementById "app"))
+                                                ;; Post-process to
+                                                ;; create the
+                                                ;; component-specific
+                                                ;; data from the
+                                                ;; query result
+                                                (let [[title] (last r)]
+                                                  {:title title}))
+                                           :conn conn})
+                          (dom/br nil)
+                          (build mouse-position #js{:q '[:find ?x ?y
+                                                           :where
+                                                           [?e :mouse/x ?x]
+                                                           [?e :mouse/y ?y]]
+                                                      :p (fn [r]
+                                                           (let [[x y] (last r)]
+                                                             {:x x
+                                                              :y y}))
+                                                      :conn conn})
+                          (dom/br nil)
+                          (dom/select #js{:onChange (fn [event]
+                                                      (update-song-sort-field! conn (reader/read-string (.. event -target -value))))}
+                                      (build "option" #js{:value :song/year} "Year")
+                                      (build "option" #js{:value :song/title} "Title")
+                                      (build "option" #js{:value :song/album} "Album"))
+                          (build song-list #js{:q '[:find ?title ?album ?year ?sort-by
+                                                      :where
+                                                      [?e :song/title ?title]
+                                                      [?e :song/album ?album]
+                                                      [?e :song/year ?year]
+                                                      [?e2 :ui/song-sort-field ?sort-by]]
+                                                 :p (fn [r]
+                                                      (let [sort-field (or (last (first r))
+                                                                           :song/year)]
+                                                        (->> r
+                                                             (map #(let [[title album year sort-by] %]
+                                                                     {:song/title title
+                                                                      :song/album album
+                                                                      :song/year  year}))
+                                                             (sort-by sort-field))))
+                                                 :conn conn})
+                          (build mouse-circle #js{:q '[:find ?x ?y
+                                                                          :where
+                                                                          [?e :mouse/x ?x]
+                                                                          [?e :mouse/y ?y]]
+                                                                     :p (fn [r]
+                                                                          (let [[x y] (last r)]
+                                                                            {:x x
+                                                                             :y y}))
+                                                                     :conn conn})))))}))
 
 (def schema
   {})
@@ -267,11 +267,12 @@
 (def conn
   (d/create-conn schema))
 
-(def container-wrapper
-  (container. conn))
-
 (def app
-  (js/React.renderComponent (container-wrapper.) app-el))
+  (js/React.render (js/React.createElement container #js{:conn conn}) app-el))
+
+;;******************************************************************************
+;;  Create DB, add tx listener, install demo app
+;;******************************************************************************
 
 (defn add-tx-report-listener! [conn]
   (d/listen! conn :reports
