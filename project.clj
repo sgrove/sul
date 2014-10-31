@@ -5,6 +5,7 @@
   :jvm-opts ^:replace ["-Xms2G" "-Xmx4G" "-server"]
 
   :dependencies [[cljs-ajax "0.2.6"]
+                 [com.facebook/react "0.11.2"]
                  [org.webjars/react "0.12.0"]
                  [datascript "0.4.1"]
                  [org.clojure/clojure "1.6.0"]
