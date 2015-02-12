@@ -1,8 +1,8 @@
-(ns sul.examples.email.core
+(ns examples.email.core
   (:require [datascript :as d]
             [sul.component :as com]
-            [sul.examples.email.components.email :as email-com]
-            [sul.examples.email.keyboard :as keyq]
+            [examples.email.components.email :as email-com]
+            [sul.keyboard :as keyq]
             [sul.replay :as replay]))
 
 ;; Every Sul app needs:

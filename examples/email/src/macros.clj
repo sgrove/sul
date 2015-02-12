@@ -1,4 +1,4 @@
-(ns email.src.macros)
+(ns examples.email.macros)
 
 (defn normalize-fn [method-name body map?]
   `(~method-name ~(first body)

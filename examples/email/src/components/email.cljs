@@ -1,4 +1,4 @@
-(ns sul.examples.email.components.email
+(ns examples.email.components.email
   (:require [cljs.reader :as reader]
             [datascript :as d]
             [goog.events :as events]
@@ -96,7 +96,7 @@
              (let [[title] r]
                (dom/div nil
                         (dom/h1 #js{:style #js{:backgroundColor (utils/rand-color)}}
-                                (str title " - " (pr-str (keys params)) " - " (.getTime (js/Date.)))))))})
+                                (str title " - " (.getTime (js/Date.)))))))})
 
 (m/defsul keyboard-inspector [params]
   {:q      '[:find ?code ?name ?depressed
@@ -140,13 +140,14 @@
                                                         :type "checkbox"
                                                         :checked (:email/selected? email)
                                                         :onClick #(let [datom [:db/add id :email/selected? (not (:email/selected? email))]]
-                                                                    (d/transact! conn [datom]))})
+                                                                    (d/transact! conn [datom] {:undo? true}))})
                                          (dom/strong nil (if open? "▼" "▲"))
                                          (dom/a #js{:href    (str id)
                                                     :onClick (fn [event]
                                                                (.preventDefault event)
                                                                (d/transact! conn [[:db/add id :email/open? (not open?)]
-                                                                                  [:db/add id :email/read? true]]))
+                                                                                  [:db/add id :email/read? true]]
+                                                                            {:undo? true}))
                                                     :style #js{:backgroundColor (utils/rand-color)}}
                                                 (if (:email/read? email)
                                                   (dom/span nil (:email/subject email))
@@ -154,17 +155,40 @@
                                          (if open?
                                            (dom/p nil (:email/body email)))))) emails))))})
 
+;; TODO: make a dropdown component and enable local-state, clean this
+;; up
 (m/defsul history-playback [params]
-  (dom/div nil
-           (dom/div #js{:className "controls"}
-                    (dom/button #js{:onClick (partial replay/replay-all-reports! params)} "Quick Replay")
-                    (dom/button #js{:onClick (partial replay/replay-all-reports-with-delay! params 1000)} "Timed Replay")
-                    (dom/button #js{:onClick (partial replay/load-and-replay-playback! "example_playback")} "Load & Replay")
-                    (dom/button #js{:onClick (partial replay/load-and-replay-playback! "example_playback" 1000)} "Timed Load & Replay"))
-           (dom/h4 nil "Quick replay will step through each of the successive replays steps as close to 60fps as possible")
-           (dom/h4 nil "Timed will replay the events with the original time delta between each step")
-           (dom/h4 nil "Load will load an example edn file and play it back, so you can see how the user used your app, or how an error occurred.")
-           (dom/a #js{:href "example_playback.edn"} "Example Playback File")))
+  {:q '[:find [?eid ?open]
+        :where
+        [?eid :history/open? ?open]]
+   :render (fn [{:keys [r conn]}]
+             (let [[eid open?] r
+                   open? (if (nil? open?) true open?)]
+               (dom/div nil
+                        (dom/div #js{:onClick (fn []
+                                                ;; TODO: Figure out
+                                                ;; how to track eid of
+                                                ;; specific
+                                                ;; attribute/entities. Perhaps
+                                                ;; there should be one
+                                                ;; entity with lots of
+                                                ;; attributes?
+                                                (d/transact! conn [[:db/add (or eid 999003) :history/open? (not open?)]]
+                                                             ;; Uncomment to make toggling the dropdown undoable
+                                                             ;;{:undo? true}
+                                                             ))
+                                     :style #js{:cursor "pointer"}} (if open? "▼" "▲") " Controls")
+                        (when open?
+                          (dom/div nil
+                                   (dom/div #js{:className "controls"}
+                                            (dom/button #js{:onClick (partial replay/replay-all-reports! params)} "Quick Replay")
+                                            (dom/button #js{:onClick (partial replay/replay-all-reports-with-delay! params 1000)} "Timed Replay")
+                                            (dom/button #js{:onClick (partial replay/load-and-replay-playback! "example_playback")} "Load & Replay")
+                                            (dom/button #js{:onClick (partial replay/load-and-replay-playback! "example_playback" 1000)} "Timed Load & Replay"))
+                                   (dom/p nil "Quick replay will step through each of the successive replays steps as close to 60fps as possible")
+                                   (dom/p nil "Timed will replay the events with the original time delta between each step")
+                                   (dom/p nil "Load will load an example edn file and play it back, so you can see how the user used your app, or how an error occurred.")
+                                   (dom/a #js{:href "example_playback.edn"} "Example Playback File"))))))})
 
 (comment
   ;; TODO: Ideal, bring in Sablono
@@ -193,7 +217,7 @@
 ;; building shared/derived-views, and querying against that. Imagine
 ;; an email filtering view by phrase, date, and other criteria. Not every component should know about all of those criteria - they should be able to request (or be parameterized by) 
 (m/defsul unread-only-filter [param]
-  {:q      {:emails       '[:find ?eid ?read
+  {:q      {:emails       '[:find ?eid ?read ?selected
                             :in $
                             :where
                             [?eid :email/selected? ?selected]
@@ -207,8 +231,8 @@
                (dom/label #js{:for "unread-filter"}
                           (dom/input #js{:type    "checkbox"
                                          :onClick (fn [event]
-                                                    (let [newly-unselected (mapv (fn [[eid read?]]
-                                                                                   [:db/add eid :email/selected? (not read?)]) (:emails r))
+                                                    (let [newly-unselected (mapv (fn [[eid read? selected?]]
+                                                                                   [:db/add eid :email/selected? (if read? false selected?)]) (:emails r))
                                                           datoms           (conj newly-unselected [:db/add 999001 :ui/inbox-show-unread-only? (not unread-only?)])]
                                                       (d/transact! conn datoms)))
                                          :checked (boolean unread-only?)})
@@ -267,7 +291,6 @@
                     (let [conn             (:sul/conn params)]
                       (dom/div #js{}
                                (com/build history-playback params)
-                               (com/build state-spitter params)
                                (com/build keyboard-inspector params)
                                (com/build title params)
                                (com/build inbox-toolbar params)
@@ -342,7 +365,5 @@
   (print "Conn: " @conn)
   (d/transact! conn [{:db/id 5
                       :app/started? true}])
-  (d/transact! conn [{:app/title "Sumail - Email like a DB"}
-                     {:db/id 10
-                      :ui/song-sort-field :song/year}])
+  (d/transact! conn [{:app/title "Sumail Example"}])
   (trickle-data! conn))
