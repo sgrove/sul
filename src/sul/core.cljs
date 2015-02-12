@@ -1,7 +1,6 @@
 (ns sul.core
   (:require [datascript :as d]
             [sul.component :as com]
-            [sul.examples.basic :as basic]
             [sul.replay :as replay]))
 
 ;; Every Sul app needs:
@@ -46,8 +45,9 @@
           reports  (:sul/reports state)
           statuses (:sul/statuses state)]
       (when (and reports statuses)
-        (replay/add-tx-report-listener! conn reports statuses))
+        (replay/add-tx-report-listener! conn state))
       (com/add-tx-render-listener! conn app))))
 
-(install! basic/container app (js/document.getElementById "app"))
-(basic/setup! (:sul/conn app))
+;;(install! basic/container app (js/document.getElementById "app"))
+;;(basic/setup! (:sul/conn app))
+

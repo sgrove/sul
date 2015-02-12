@@ -4,8 +4,11 @@ pom.xml
 /lib/
 /classes/
 /out/
+/email_out/
+/email_prod_out/
 /target/
 .lein-deps-sum
 .lein-repl-history
 .lein-plugins/
 .nrepl-port
+.DS_Store

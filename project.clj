@@ -60,5 +60,4 @@
                                        :output-to     "sul.email.prod.js"
                                        :output-dir    "email_prod_out"
                                        :pretty-print  false
-                                       :optimizations :advanced
-                                       :source-map    true?}}]})
+                                       :optimizations :advanced}}]})
