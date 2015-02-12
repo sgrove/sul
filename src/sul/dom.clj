@@ -1,9 +1,6 @@
 (ns sul.dom
   (:refer-clojure :exclude [map meta time]))
 
-;; Just completely lifted from
-;; https://github.com/swannodette/om/blob/master/src/om/dom.clj
-
 (def tags
   '[a
     abbr
@@ -112,7 +109,7 @@
     var
     video
     wbr
-    
+
     ;; svg
     circle
     ellipse
@@ -132,18 +129,18 @@
 
 (defn ^:private gen-react-dom-inline-fn [tag]
   `(defmacro ~tag [opts# & children#]
-     `(~'~(symbol "js" (str "React.createElement")) (name tag) ~opts# ~@children#)))
+     `(~'~(symbol "js" (str "React.DOM." (name tag))) ~opts# ~@children#)))
 
 (defmacro ^:private gen-react-dom-inline-fns []
   `(do
-     ~@(clojure.core/map gen-react-dom-inline-fn tags)))
+     ~@ (clojure.core/map gen-react-dom-inline-fn tags)))
 
 (gen-react-dom-inline-fns)
 
 (defn ^:private gen-react-dom-fn [tag]
   `(defn ~tag [opts# & children#]
-     (.apply ~(symbol "js" "React.createElement") nil (cljs.core/into-array (cons ~(name tag) (cons opts# children#))))))
+     (.apply ~(symbol "js" (str "React.DOM." (name tag))) nil (cljs.core/into-array (cons opts# children#)))))
 
 (defmacro ^:private gen-react-dom-fns []
   `(do
-     ~@(clojure.core/map gen-react-dom-fn tags)))
+          ~@ (clojure.core/map gen-react-dom-fn tags)))
